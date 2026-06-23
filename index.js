@@ -3,7 +3,8 @@ const app=express();
 app.use(express.json());
 const port=3000;
 const authRouter=require('./src/routes/auth.js');
-
+const cookieParser=require('cookie-parser');
+app.use(cookieParser());
 
 app.use('/auth',authRouter);
 
