@@ -3,10 +3,13 @@ const app=express();
 app.use(express.json());
 const port=3000;
 const authRouter=require('./src/routes/auth.js');
+const watchlistRouter=require('./src/routes/watchlist.js');
 const cookieParser=require('cookie-parser');
 app.use(cookieParser());
 
 app.use('/auth',authRouter);
+app.use('/watchlist',watchlistRouter);
+
 
 app.get('/',(req,res)=>{
   res.send('Hello World!');
