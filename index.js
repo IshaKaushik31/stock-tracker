@@ -5,6 +5,7 @@ const port=3000;
 const authRouter=require('./src/routes/auth.js');
 const watchlistRouter=require('./src/routes/watchlist.js');
 const cookieParser=require('cookie-parser');
+require('./src/services/cron');
 app.use(cookieParser());
 
 app.use('/auth',authRouter);

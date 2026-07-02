@@ -11,3 +11,11 @@ async function test(){
 }
 test();
 
+const YahooFinance=require('yahoo-finance2').default;
+const yf= new YahooFinance();
+async function test(){
+  const result=await yf.quote('AAPL');
+  console.log(result);
+  console.log(result.regularMarketPrice);
+}
+test();
