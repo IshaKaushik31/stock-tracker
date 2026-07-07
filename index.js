@@ -5,6 +5,7 @@ const port=3000;
 const authRouter=require('./src/routes/auth.js');
 const watchlistRouter=require('./src/routes/watchlist.js');
 const alertsRouter=require('./src/routes/alerts.js');
+const holdingsRouter=require('./src/routes/holding.js');
 const cookieParser=require('cookie-parser');
 require('./src/services/cron');
 app.use(cookieParser());
@@ -12,6 +13,7 @@ app.use(cookieParser());
 app.use('/auth',authRouter);
 app.use('/watchlist',watchlistRouter);
 app.use('/alerts',alertsRouter);
+app.use('/holdings',holdingsRouter);
 
 
 app.get('/',(req,res)=>{
