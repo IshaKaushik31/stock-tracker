@@ -19,20 +19,16 @@
 //   console.log(result.regularMarketPrice);
 // }
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { HfInference } = require('@huggingface/inference');
 
 async function test() {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`
-  );
-  const data = await response.json();
-  const embeddingModels = data.models.filter(m => m.supportedGenerationMethods?.includes('embedContent'));
-  console.log(embeddingModels.map(m => m.name));
-
-  const generateModels = data.models.filter(m => m.supportedGenerationMethods?.includes('generateContent'));
-console.log(generateModels.map(m => m.name));
-
+  const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+  const result = await hf.featureExtraction({
+    model: 'sentence-transformers/all-MiniLM-L6-v2',
+    inputs: 'test sentence'
+  });
+  console.log(result);
+  console.log('dimensions:', result.length);
 }
 test();
 

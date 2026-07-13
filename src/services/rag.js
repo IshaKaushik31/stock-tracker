@@ -2,7 +2,7 @@ const pdfParse = require('pdf-parse');
 
 
 const pool=require('../db/pool');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 require('dotenv').config();
 const sbd = require('sbd');
 
@@ -100,16 +100,22 @@ return overlappedChunks;
 
 
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const embeddingModel = genAI.getGenerativeModel({ model: 'models/gemini-embedding-001' });
 
 
 
+
+
+const { HfInference } = require('@huggingface/inference');
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 async function embedText(text) {
-  const result = await embeddingModel.embedContent(text);
-  return result.embedding.values;
+  const result = await hf.featureExtraction({
+    model: 'sentence-transformers/all-MiniLM-L6-v2',
+    inputs: text
+  });
+  return result;
 }
+
 
 async function processTranscript(buffer,trans_id){
   const text=await extractText(buffer);
@@ -133,5 +139,5 @@ async function processTranscript(buffer,trans_id){
 
 }
 
-module.exports={processTranscript,embedText,genAI};
+module.exports={processTranscript,embedText};
 
