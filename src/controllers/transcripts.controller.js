@@ -70,7 +70,7 @@ async function askQuestion(req, res) {
        LIMIT 5`,
       [trans_id, JSON.stringify(questionVector)]
     );
-    console.log(chunks.rows.map(r => r.chunk_text));
+    // console.log(chunks.rows.map(r => r.chunk_text));
 
 
     const context = chunks.rows.map(r => r.chunk_text).join('\n\n');
