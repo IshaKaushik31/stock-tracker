@@ -8,15 +8,13 @@ export default function Holdings() {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ symbol: '', quantity: '', buy_price: '', buy_date: '' });
 
-  useEffect(() => {
-    fetchHoldings();
-  }, []);
+  useEffect(() => { fetchHoldings(); }, []);
 
   async function fetchHoldings() {
     try {
       const data = await api.getHoldings();
       setHoldings(data.holdings || []);
-    } catch (err) {
+    } catch {
       setError('Failed to load holdings');
     } finally {
       setLoading(false);
@@ -42,99 +40,136 @@ export default function Holdings() {
     try {
       await api.deleteHolding(id);
       setHoldings(prev => prev.filter(h => h.holding_id !== id));
-    } catch (err) {
+    } catch {
       setError('Failed to delete holding');
     }
   }
 
-  function pnl(h) {
+  function computePnl(h) {
     if (h.current_price == null) return null;
     return (h.current_price - h.buy_price) * h.quantity;
   }
 
-  function pnlPercent(h) {
+  function computePnlPct(h) {
     if (h.current_price == null) return null;
     return ((h.current_price - h.buy_price) / h.buy_price) * 100;
   }
 
+  const totalInvested = holdings.reduce((s, h) => s + h.buy_price * h.quantity, 0);
+  const totalValue = holdings.reduce((s, h) => s + (h.current_price ?? h.buy_price) * h.quantity, 0);
+  const totalPnl = totalValue - totalInvested;
+  const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
+
   return (
     <div className="page">
-      <h2>Holdings</h2>
+      <div className="page-header">
+        <h1 className="page-title">Portfolio</h1>
+      </div>
+
       {error && <div className="error">{error}</div>}
 
-      <div className="card">
-        <h3>Add Holding</h3>
-        <form className="inline-form" onSubmit={handleAdd}>
-          <input
-            type="text"
-            placeholder="Symbol"
-            value={form.symbol}
-            onChange={e => setForm({ ...form, symbol: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Quantity"
-            value={form.quantity}
-            onChange={e => setForm({ ...form, quantity: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Buy Price"
-            step="0.01"
-            value={form.buy_price}
-            onChange={e => setForm({ ...form, buy_price: e.target.value })}
-            required
-          />
-          <input
-            type="date"
-            value={form.buy_date}
-            onChange={e => setForm({ ...form, buy_date: e.target.value })}
-            required
-          />
-          <button type="submit" disabled={adding}>{adding ? 'Adding...' : 'Add'}</button>
-        </form>
+      <div className="stats-bar">
+        <div className="stat-card">
+          <div className="stat-label">Total Invested</div>
+          <div className="stat-value cyan">${totalInvested.toFixed(2)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Current Value</div>
+          <div className="stat-value">${totalValue.toFixed(2)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Total P&amp;L</div>
+          <div className={`stat-value ${totalPnl >= 0 ? 'green' : 'red'}`}>
+            {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Return</div>
+          <div className={`stat-value ${totalPnlPct >= 0 ? 'green' : 'red'}`}>
+            {totalPnlPct >= 0 ? '+' : ''}{totalPnlPct.toFixed(2)}%
+          </div>
+        </div>
       </div>
 
       <div className="card">
-        <h3>Portfolio</h3>
+        <div className="card-header">
+          <span className="card-title">Add Position</span>
+        </div>
+        <div className="card-body">
+          <form className="add-form" onSubmit={handleAdd}>
+            <input type="text" placeholder="Symbol" value={form.symbol}
+              onChange={e => setForm({ ...form, symbol: e.target.value })} required />
+            <input type="number" placeholder="Quantity" value={form.quantity}
+              onChange={e => setForm({ ...form, quantity: e.target.value })} required />
+            <input type="number" placeholder="Buy Price" step="0.01" value={form.buy_price}
+              onChange={e => setForm({ ...form, buy_price: e.target.value })} required />
+            <input type="date" value={form.buy_date}
+              onChange={e => setForm({ ...form, buy_date: e.target.value })} required />
+            <button type="submit" disabled={adding}>{adding ? 'Adding...' : '+ Add'}</button>
+          </form>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Holdings</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{holdings.length} positions</span>
+        </div>
         {loading ? (
-          <div className="empty">Loading...</div>
+          <div className="loading">Loading...</div>
         ) : holdings.length === 0 ? (
-          <div className="empty">No holdings yet.</div>
+          <div className="empty">
+            <span className="empty-icon">💼</span>
+            No positions yet. Add your first trade above.
+          </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Qty</th>
-                <th>Buy Price</th>
-                <th>Current Price</th>
-                <th>P&amp;L</th>
-                <th>P&amp;L %</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {holdings.map(h => {
-                const gain = pnl(h);
-                const gainPct = pnlPercent(h);
-                const cls = gain == null ? '' : gain >= 0 ? 'pnl-pos' : 'pnl-neg';
-                return (
-                  <tr key={h.holding_id}>
-                    <td><span className="symbol">{h.symbol}</span></td>
-                    <td>{h.quantity}</td>
-                    <td>${parseFloat(h.buy_price).toFixed(2)}</td>
-                    <td><span className="price">{h.current_price != null ? `$${parseFloat(h.current_price).toFixed(2)}` : '—'}</span></td>
-                    <td><span className={cls}>{gain != null ? `${gain >= 0 ? '+' : ''}$${gain.toFixed(2)}` : '—'}</span></td>
-                    <td><span className={cls}>{gainPct != null ? `${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%` : '—'}</span></td>
-                    <td><button className="btn-delete" onClick={() => handleDelete(h.holding_id)}>Delete</button></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th className="right">Qty</th>
+                  <th className="right">Buy Price</th>
+                  <th className="right">Current</th>
+                  <th className="right">P&amp;L</th>
+                  <th className="right">Return</th>
+                  <th className="right"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {holdings.map(h => {
+                  const pnl = computePnl(h);
+                  const pct = computePnlPct(h);
+                  const pos = pnl == null ? null : pnl >= 0;
+                  return (
+                    <tr key={h.holding_id}>
+                      <td><span className="sym">{h.symbol}</span></td>
+                      <td className="right"><span className="num">{h.quantity}</span></td>
+                      <td className="right"><span className="num">${parseFloat(h.buy_price).toFixed(2)}</span></td>
+                      <td className="right">
+                        <span className="num-green">
+                          {h.current_price != null ? `$${parseFloat(h.current_price).toFixed(2)}` : '—'}
+                        </span>
+                      </td>
+                      <td className="right">
+                        <span className={pos == null ? 'num' : pos ? 'num-green' : 'num-red'}>
+                          {pnl == null ? '—' : `${pos ? '+' : ''}$${pnl.toFixed(2)}`}
+                        </span>
+                      </td>
+                      <td className="right">
+                        <span className={pos == null ? 'num' : pos ? 'num-green' : 'num-red'}>
+                          {pct == null ? '—' : `${pos ? '+' : ''}${pct.toFixed(2)}%`}
+                        </span>
+                      </td>
+                      <td className="right">
+                        <button className="btn-danger" onClick={() => handleDelete(h.holding_id)}>Delete</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

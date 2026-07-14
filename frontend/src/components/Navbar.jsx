@@ -7,14 +7,14 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <span className="brand">STOCKTRACKER</span>
+      <span className="brand">StockTracker</span>
       <div className="nav-links">
         <NavLink to="/watchlist">Watchlist</NavLink>
         <NavLink to="/holdings">Holdings</NavLink>
         <NavLink to="/alerts">Alerts</NavLink>
-        <NavLink to="/transcripts">Transcripts</NavLink>
+        <NavLink to="/transcripts">AI Research</NavLink>
       </div>
-      <button className="btn-logout" onClick={logout}>Logout</button>
+      <button className="btn-logout" onClick={logout}>Sign Out</button>
     </nav>
   );
 }

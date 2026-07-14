@@ -6,6 +6,29 @@ let token = null;
 export function setToken(t) { token = t; }
 export function getToken() { return token; }
 
+// Intercept 401 responses, try to refresh, then retry the original request
+axios.interceptors.response.use(
+  res => res,
+  async err => {
+    const original = err.config;
+    const isRefresh = original.url?.includes('/auth/refresh');
+    if (err.response?.status === 401 && !original._retry && !isRefresh) {
+      original._retry = true;
+      try {
+        const res = await axios.post(`${BASE}/auth/refresh`, {}, { withCredentials: true });
+        const newToken = res.data.token;
+        setToken(newToken);
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return axios(original);
+      } catch {
+        token = null;
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
 function headers() {
   return { Authorization: `Bearer ${token}` };
 }
