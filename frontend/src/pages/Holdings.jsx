@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import * as api from '../api';
+import { currencySymbol } from '../api';
 
 export default function Holdings() {
   const [holdings, setHoldings] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ symbol: '', quantity: '', buy_price: '', buy_date: '' });
+  const [form, setForm] = useState({ symbol: '', quantity: '', buy_price: '' });
 
   useEffect(() => { fetchHoldings(); }, []);
 
   async function fetchHoldings() {
     try {
       const data = await api.getHoldings();
-      setHoldings(data.holdings || []);
+      setHoldings(data.holding || []);
     } catch {
       setError('Failed to load holdings');
     } finally {
@@ -26,8 +27,8 @@ export default function Holdings() {
     setAdding(true);
     setError('');
     try {
-      await api.addHolding(form.symbol.toUpperCase(), form.quantity, form.buy_price, form.buy_date);
-      setForm({ symbol: '', quantity: '', buy_price: '', buy_date: '' });
+      await api.addHolding(form.symbol.toUpperCase(), form.quantity, form.buy_price);
+      setForm({ symbol: '', quantity: '', buy_price: '' });
       await fetchHoldings();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add holding');
@@ -103,8 +104,6 @@ export default function Holdings() {
               onChange={e => setForm({ ...form, quantity: e.target.value })} required />
             <input type="number" placeholder="Buy Price" step="0.01" value={form.buy_price}
               onChange={e => setForm({ ...form, buy_price: e.target.value })} required />
-            <input type="date" value={form.buy_date}
-              onChange={e => setForm({ ...form, buy_date: e.target.value })} required />
             <button type="submit" disabled={adding}>{adding ? 'Adding...' : '+ Add'}</button>
           </form>
         </div>
@@ -145,15 +144,15 @@ export default function Holdings() {
                     <tr key={h.holding_id}>
                       <td><span className="sym">{h.symbol}</span></td>
                       <td className="right"><span className="num">{h.quantity}</span></td>
-                      <td className="right"><span className="num">${parseFloat(h.buy_price).toFixed(2)}</span></td>
+                      <td className="right"><span className="num">{currencySymbol(h.symbol)}{parseFloat(h.price_bought).toFixed(2)}</span></td>
                       <td className="right">
                         <span className="num-green">
-                          {h.current_price != null ? `$${parseFloat(h.current_price).toFixed(2)}` : '—'}
+                          {h.current_price != null ? `${currencySymbol(h.symbol)}${parseFloat(h.current_price).toFixed(2)}` : '—'}
                         </span>
                       </td>
                       <td className="right">
                         <span className={pos == null ? 'num' : pos ? 'num-green' : 'num-red'}>
-                          {pnl == null ? '—' : `${pos ? '+' : ''}$${pnl.toFixed(2)}`}
+                          {pnl == null ? '—' : `${pos ? '+' : ''}${currencySymbol(h.symbol)}${pnl.toFixed(2)}`}
                         </span>
                       </td>
                       <td className="right">

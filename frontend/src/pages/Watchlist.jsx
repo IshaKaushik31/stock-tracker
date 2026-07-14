@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as api from '../api';
+import { currencySymbol } from '../api';
 
 export default function Watchlist() {
   const [watchlist, setWatchlist] = useState([]);
@@ -13,7 +14,7 @@ export default function Watchlist() {
   async function fetchWatchlist() {
     try {
       const data = await api.getWatchlist();
-      setWatchlist(data.watchlist || []);
+      setWatchlist(data.stocks || []);
     } catch {
       setError('Failed to load watchlist');
     } finally {
@@ -37,10 +38,10 @@ export default function Watchlist() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(symbol) {
     try {
-      await api.removeFromWatchlist(id);
-      setWatchlist(prev => prev.filter(w => w.watchlist_id !== id));
+      await api.removeFromWatchlist(symbol);
+      setWatchlist(prev => prev.filter(w => w.symbol !== symbol));
     } catch {
       setError('Failed to remove stock');
     }
@@ -100,15 +101,15 @@ export default function Watchlist() {
               </thead>
               <tbody>
                 {watchlist.map(w => (
-                  <tr key={w.watchlist_id}>
+                  <tr key={w.symbol}>
                     <td><span className="sym">{w.symbol}</span></td>
                     <td className="right">
                       <span className="num-green">
-                        {w.current_price != null ? `$${parseFloat(w.current_price).toFixed(2)}` : '—'}
+                        {w.curr_price != null ? `${currencySymbol(w.symbol)}${parseFloat(w.curr_price).toFixed(2)}` : '—'}
                       </span>
                     </td>
                     <td className="right">
-                      <button className="btn-danger" onClick={() => handleDelete(w.watchlist_id)}>Remove</button>
+                      <button className="btn-danger" onClick={() => handleDelete(w.symbol)}>Remove</button>
                     </td>
                   </tr>
                 ))}

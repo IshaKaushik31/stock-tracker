@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import * as api from '../api';
+import { currencySymbol } from '../api';
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ symbol: '', target_price: '', direction: 'above' });
+  const [form, setForm] = useState({ symbol: '', target_price: '', direction: 'Above' });
 
   useEffect(() => { fetchAlerts(); }, []);
 
@@ -27,10 +28,10 @@ export default function Alerts() {
     setError('');
     try {
       await api.addAlert(form.symbol.toUpperCase(), form.target_price, form.direction);
-      setForm({ symbol: '', target_price: '', direction: 'above' });
+      setForm({ symbol: '', target_price: '', direction: 'Above' });
       await fetchAlerts();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add alert');
+      setError('Failed to add alert. Check that the symbol is valid and try again.');
     } finally {
       setAdding(false);
     }
@@ -41,12 +42,12 @@ export default function Alerts() {
       await api.deleteAlert(id);
       setAlerts(prev => prev.filter(a => a.alert_id !== id));
     } catch {
-      setError('Failed to delete alert');
+      setError('Failed to delete alert. Please try again.');
     }
   }
 
-  const active = alerts.filter(a => !a.triggered).length;
-  const triggered = alerts.filter(a => a.triggered).length;
+  const active = alerts.filter(a => !a.is_triggered).length;
+  const triggered = alerts.filter(a => a.is_triggered).length;
 
   return (
     <div className="page">
@@ -83,8 +84,8 @@ export default function Alerts() {
               value={form.target_price} onChange={e => setForm({ ...form, target_price: e.target.value })} required />
             <select value={form.direction} onChange={e => setForm({ ...form, direction: e.target.value })}
               style={{ maxWidth: 140 }}>
-              <option value="above">Price goes above</option>
-              <option value="below">Price goes below</option>
+              <option value="Above">Price goes above</option>
+              <option value="Below">Price goes below</option>
             </select>
             <button type="submit" disabled={adding}>{adding ? 'Adding...' : '+ Set Alert'}</button>
           </form>
@@ -117,15 +118,15 @@ export default function Alerts() {
               <tbody>
                 {alerts.map(a => (
                   <tr key={a.alert_id}>
-                    <td><span className="sym">{a.symbol}</span></td>
-                    <td className="right"><span className="num">${parseFloat(a.target_price).toFixed(2)}</span></td>
+                    <td><span className="sym">{a.stock_symbol}</span></td>
+                    <td className="right"><span className="num">{currencySymbol(a.stock_symbol)}{parseFloat(a.price).toFixed(2)}</span></td>
                     <td>
-                      <span className={`badge ${a.direction === 'above' ? 'badge-green' : 'badge-red'}`}>
-                        {a.direction === 'above' ? '▲ Above' : '▼ Below'}
+                      <span className={`badge ${a.direction === 'Above' ? 'badge-green' : 'badge-red'}`}>
+                        {a.direction === 'Above' ? '▲ Above' : '▼ Below'}
                       </span>
                     </td>
                     <td>
-                      {a.triggered
+                      {a.is_triggered
                         ? <span className="badge badge-red">⚡ Triggered</span>
                         : <span className="badge badge-dim">● Active</span>}
                     </td>

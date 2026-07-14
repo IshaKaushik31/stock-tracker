@@ -5,6 +5,7 @@ let token = null;
 
 export function setToken(t) { token = t; }
 export function getToken() { return token; }
+export function currencySymbol(symbol) { return symbol?.endsWith('.NS') ? '₹' : '$'; }
 
 // Intercept 401 responses, try to refresh, then retry the original request
 axios.interceptors.response.use(
@@ -76,7 +77,7 @@ export async function getAlerts() {
 }
 
 export async function addAlert(symbol, target_price, direction) {
-  const res = await axios.post(`${BASE}/alerts`, { symbol, target_price, direction }, { headers: headers() });
+  const res = await axios.post(`${BASE}/alerts`, { symbol, price: target_price, direction }, { headers: headers() });
   return res.data;
 }
 
@@ -90,8 +91,8 @@ export async function getHoldings() {
   return res.data;
 }
 
-export async function addHolding(symbol, quantity, buy_price, buy_date) {
-  const res = await axios.post(`${BASE}/holdings`, { symbol, quantity, buy_price, buy_date }, { headers: headers() });
+export async function addHolding(symbol, quantity, buy_price) {
+  const res = await axios.post(`${BASE}/holdings`, { symbol, quantity, price_bought: buy_price }, { headers: headers() });
   return res.data;
 }
 
