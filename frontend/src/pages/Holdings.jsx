@@ -47,17 +47,17 @@ export default function Holdings() {
   }
 
   function computePnl(h) {
-    if (h.current_price == null) return null;
-    return (h.current_price - h.buy_price) * h.quantity;
+    if (h.curr_price == null) return null;
+    return (h.curr_price - h.price_bought) * h.quantity;
   }
 
   function computePnlPct(h) {
-    if (h.current_price == null) return null;
-    return ((h.current_price - h.buy_price) / h.buy_price) * 100;
+    if (h.curr_price == null) return null;
+    return ((h.curr_price - h.price_bought) / h.price_bought) * 100;
   }
 
-  const totalInvested = holdings.reduce((s, h) => s + h.buy_price * h.quantity, 0);
-  const totalValue = holdings.reduce((s, h) => s + (h.current_price ?? h.buy_price) * h.quantity, 0);
+  const totalInvested = holdings.reduce((s, h) => s + h.price_bought * h.quantity, 0);
+  const totalValue = holdings.reduce((s, h) => s + (h.curr_price ?? h.price_bought) * h.quantity, 0);
   const totalPnl = totalValue - totalInvested;
   const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
 
@@ -147,7 +147,7 @@ export default function Holdings() {
                       <td className="right"><span className="num">{currencySymbol(h.symbol)}{parseFloat(h.price_bought).toFixed(2)}</span></td>
                       <td className="right">
                         <span className="num-green">
-                          {h.current_price != null ? `${currencySymbol(h.symbol)}${parseFloat(h.current_price).toFixed(2)}` : '—'}
+                          {h.curr_price != null ? `${currencySymbol(h.symbol)}${parseFloat(h.curr_price).toFixed(2)}` : '—'}
                         </span>
                       </td>
                       <td className="right">
