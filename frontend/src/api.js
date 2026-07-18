@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE = 'http://localhost:3000';
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 let token = null;
 
 export function setToken(t) { token = t; }

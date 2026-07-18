@@ -1,7 +1,8 @@
 const express=require('express');
 const cors=require('cors');
 const app=express();
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
+
 app.use(express.json());
 const port=3000;
 const authRouter=require('./src/routes/auth.js');
@@ -10,7 +11,7 @@ const alertsRouter=require('./src/routes/alerts.js');
 const holdingsRouter=require('./src/routes/holding.js');
 const transcriptsRouter=require('./src/routes/transcripts.js');
 const cookieParser=require('cookie-parser');
-require('./src/services/cron');
+// require('./src/services/cron');
 app.use(cookieParser());
 
 app.use('/auth',authRouter);

@@ -43,7 +43,8 @@ async function login(req,res){
   await pool.query('INSERT INTO refresh_tokens (user_id,token) VALUES ($1,$2)',[user.rows[0].user_id,refreshToken]);
 
   res.cookie('refreshToken',refreshToken,{
-    sameSite:'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
     httpOnly:true,
     maxAge:7*24*60*60000
   });
