@@ -53,7 +53,7 @@ async function login(req,res){
    token:accessToken
   });
  } catch(error){
-  res.status(500).json({message:'login failed'});
+  res.status(500).json({message:error.message});
  }
   
 }
