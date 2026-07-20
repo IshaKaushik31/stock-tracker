@@ -10,8 +10,9 @@ async function run() {
   try {
     const { rows } = await pool.query('select distinct symbol from stocks');
     for (const row of rows) {
-      const { regularMarketPrice } = await yf.quote(row.symbol);
-      await pool.query('update stocks set curr_price=$1 where symbol=$2', [regularMarketPrice, row.symbol]);
+      const quote = await yf.quote(row.symbol);
+      if (!quote || quote.regularMarketPrice == null) continue;
+      await pool.query('update stocks set curr_price=$1 where symbol=$2', [quote.regularMarketPrice, row.symbol]);
     }
 
     const alerts = await pool.query(
