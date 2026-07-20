@@ -20,7 +20,7 @@ export default function App() {
     api.refresh()
       .then(data => {
         api.setToken(data.token);
-        setTokenState(data.accessToken);
+        setTokenState(data.token);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
