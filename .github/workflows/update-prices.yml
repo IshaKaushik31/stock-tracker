@@ -17,3 +17,4 @@ jobs:
       - run: node scripts/update-prices.js
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
