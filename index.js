@@ -3,6 +3,9 @@ const cors=require('cors');
 const app=express();
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 
+const passport = require('./src/config/passport');
+
+
 app.use(express.json());
 const port=3000;
 const authRouter=require('./src/routes/auth.js');
@@ -13,6 +16,10 @@ const transcriptsRouter=require('./src/routes/transcripts.js');
 const cookieParser=require('cookie-parser');
 // require('./src/services/cron');
 app.use(cookieParser());
+
+
+app.use(passport.initialize());
+
 
 app.use('/auth',authRouter);
 app.use('/watchlist',watchlistRouter);

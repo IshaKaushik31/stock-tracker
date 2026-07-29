@@ -55,7 +55,7 @@ function chunkText(text, maxSize = 1000) {
     } else {
       const paragraphs = text.split(/\n\n+|\n(?=[A-Z])/).filter(p => p.trim().length > 0);
 
-      let buffer = '';
+      let buffer = '';//current chunk being built
       for (const para of paragraphs) {
         if ((buffer + para).length <= maxSize) {
           buffer += para + '\n\n';
@@ -67,7 +67,7 @@ function chunkText(text, maxSize = 1000) {
             
 const sentences = sbd.sentences(para, { newline_boundaries: true });
 
-            let sentBuffer = '';
+            let sentBuffer = '';//current chunk being created
             for (const sentence of sentences) {
               if ((sentBuffer + sentence).length <= maxSize) {
                 sentBuffer += sentence + ' ';

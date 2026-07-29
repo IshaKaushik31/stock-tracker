@@ -52,6 +52,10 @@ export default function Login() {
           </button>
         </form>
         <p>No account? <Link to="/register">Register</Link></p>
+        <div className="divider">or</div>
+        <a href="https://stock-tracker-o216.onrender.com/auth/google" className="btn-google">
+          Login with Google
+        </a>
       </div>
     </div>
   );
