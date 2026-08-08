@@ -81,13 +81,27 @@ function buildPrompt(type, context, question) {
 
   return `${systemPrompts[type]}\n\n${base}`;
 }
+async function getChatHistory(req,res){
+  try{
+    const {id}=req.user;
+    const trans_id=req.params.id;
+    const chatHistory=await pool.query('select question,answer from qna where user_id=$1 and trans_id=$2',[id,trans_id]);
+    res.json({chatObj:chatHistory.rows});
+
+  }
+  catch(error){
+    res.json({message:error.message});
+
+  }
+}
 
 async function askQuestion(req, res) {
   try {
     const { id } = req.user;
     const trans_id = req.params.id;
     const { question } = req.body;
-
+    const result=await pool.query('insert into qna (trans_id,user_id,question)values($1,$2,$3) returning ques_id',[trans_id,id,question]);
+    const {ques_id}=result.rows[0];
     const type = classifyQuestion(question);
     const limit = type === 'summary' ? 10 : 5;
 
@@ -108,7 +122,10 @@ async function askQuestion(req, res) {
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }]
     });
+
     const answer = completion.choices[0].message.content;
+    
+    await pool.query('update qna set answer=$1 where ques_id=$2',[answer,ques_id]);
 
     res.json({ answer });
 
@@ -118,4 +135,4 @@ async function askQuestion(req, res) {
 }
 
 
-module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion};
+module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion,getChatHistory};

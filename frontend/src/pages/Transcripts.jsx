@@ -83,9 +83,18 @@ export default function Transcripts() {
     }
   }
 
-  function handleSelect(t) {
+  async function handleSelect(t) {
     setSelected(t);
     setMessages([]);
+    try {
+      const data = await api.getChatHistory(t.trans_id);
+      const history = [];
+      for (const row of data.chatObj || []) {
+        history.push({ type: 'user', text: row.question });
+        if (row.answer) history.push({ type: 'ai', text: row.answer });
+      }
+      setMessages(history);
+    } catch {}
   }
 
   function handleKeyDown(e) {

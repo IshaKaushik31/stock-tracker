@@ -121,3 +121,8 @@ export async function askQuestion(trans_id, question) {
   const res = await axios.post(`${BASE}/transcripts/${trans_id}/question`, { question }, { headers: headers() });
   return res.data;
 }
+
+export async function getChatHistory(trans_id) {
+  const res = await axios.get(`${BASE}/transcripts/${trans_id}`, { headers: headers() });
+  return res.data;
+}
