@@ -119,7 +119,7 @@ async function askQuestion(req, res) {
     const prompt = buildPrompt(type, context, question);
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: '"openai/gpt-oss-20',
       messages: [{ role: 'user', content: prompt }]
     });
 
