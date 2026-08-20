@@ -19,16 +19,39 @@
 //   console.log(result.regularMarketPrice);
 // }
 require('dotenv').config();
-const { HfInference } = require('@huggingface/inference');
 
-async function test() {
-  const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
-  const result = await hf.featureExtraction({
-    model: 'sentence-transformers/all-MiniLM-L6-v2',
-    inputs: 'test sentence'
-  });
-  console.log(result);
-  console.log('dimensions:', result.length);
+// const { HfInference } = require('@huggingface/inference');
+
+// async function test() {
+//   const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+//   const result = await hf.featureExtraction({
+//     model: 'sentence-transformers/all-MiniLM-L6-v2',
+//     inputs: 'test sentence'
+//   });
+//   console.log(result);
+//   console.log('dimensions:', result.length);
+// }
+const OpenAI = require('openai');
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1'
+
+
+});
+
+async function test(){
+
+      const response = await groq.chat.completions.create({
+        model: "openai/gpt-oss-20b",
+        messages: [
+          {
+            role: "user",
+            content: "Say hello"
+          }
+        ]
+      });
+
+      console.log(response.choices[0].message.content);
 }
 test();
 
