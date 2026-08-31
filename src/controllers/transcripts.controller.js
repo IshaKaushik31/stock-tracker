@@ -118,16 +118,27 @@ async function askQuestion(req, res) {
     const context = chunks.rows.map(r => r.chunk_text).join('\n\n');
     const prompt = buildPrompt(type, context, question);
 
+    const history = await pool.query(
+      'SELECT question, answer FROM qna WHERE trans_id=$1 AND user_id=$2 AND answer != \'\' ORDER BY ques_id DESC LIMIT 5',
+      [trans_id, id]
+    );
+
+    const historyMessages = [];
+    for (const row of history.rows.reverse()) {
+      historyMessages.push({ role: 'user', content: row.question });
+      historyMessages.push({ role: 'assistant', content: row.answer });
+    }
+
     const completion = await groq.chat.completions.create({
       model: 'openai/gpt-oss-20b',
-      messages: [{ role: 'user', content: prompt }]
+      messages: [...historyMessages, { role: 'user', content: prompt }]
     });
 
     const answer = completion.choices[0].message.content;
     
     await pool.query('update qna set answer=$1 where ques_id=$2',[answer,ques_id]);
 
-    res.json({ answer });
+    res.json({answer: answer});
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -135,4 +146,4 @@ async function askQuestion(req, res) {
 }
 
 
-module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion,getChatHistory};
+module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion,getChatHistory,buildPrompt,classifyQuestion};
