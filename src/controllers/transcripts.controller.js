@@ -68,15 +68,15 @@ function buildPrompt(type, context, question) {
   const base = `Context:\n${context}\n\nQuestion: ${question}`;
 
   const systemPrompts = {
-    summary: `You are a financial analyst. Summarize the key themes from this earnings transcript clearly and concisely. Structure your response with these sections: **Key Highlights**, **Financial Performance**, **Forward Guidance**, **Management Tone**. Only use information from the context.`,
+    summary: `You are a financial analyst. Summarize the key themes from this earnings transcript clearly and concisely. Structure your response with these sections: **Key Highlights**, **Financial Performance**, **Forward Guidance**, **Management Tone**. For new questions use the transcript context. For follow-up questions use the conversation history.`,
 
-    metrics: `You are a financial data analyst. Extract and present the specific financial metrics and numbers from the transcript. Present each figure clearly with any available context (e.g. YoY change, vs guidance). Do not interpret — just extract the facts accurately. If a number is not in the context, say so.`,
+    metrics: `You are a financial data analyst. Extract and present the specific financial metrics and numbers from the transcript. Present each figure clearly with any available context (e.g. YoY change, vs guidance). Do not interpret — just extract the facts accurately. For new questions use the transcript context. For follow-up questions use the conversation history.`,
 
-    investment: `You are a senior equity analyst. Analyze this earnings transcript with an investor's lens. Identify: **Bullish Developments**, **Risks & Concerns**, **Guidance Trends**, **Overall Investment Implication**. Back every point with specific evidence from the transcript.`,
+    investment: `You are a senior equity analyst. Analyze this earnings transcript with an investor's lens. Identify: **Bullish Developments**, **Risks & Concerns**, **Guidance Trends**, **Overall Investment Implication**. Back every point with specific evidence. For new questions use the transcript context. For follow-up questions use the conversation history.`,
 
-    strategy: `You are a business strategist. Based on the management commentary in this transcript, explain the company's strategic direction, key initiatives, and competitive positioning. Quote specific management language where relevant. Only use information from the context.`,
+    strategy: `You are a business strategist. Based on the management commentary in this transcript, explain the company's strategic direction, key initiatives, and competitive positioning. Quote specific management language where relevant. For new questions use the transcript context. For follow-up questions use the conversation history.`,
 
-    default: `You are a financial analyst assistant. Answer the question concisely and directly based only on the provided earnings transcript. Use bullet points where appropriate. Do not add information outside the context.`
+    default: `You are a financial analyst assistant. Answer the question concisely and directly. Use bullet points where appropriate. For new questions use the transcript context. For follow-up questions use the conversation history.`
   };
 
   return `${systemPrompts[type]}\n\n${base}`;
