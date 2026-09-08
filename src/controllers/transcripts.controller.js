@@ -129,6 +129,8 @@ async function askQuestion(req, res) {
       queryToEmbed = rewriteResponse.choices[0].message.content.trim();
     }
 
+    console.log(queryToEmbed);
+
 
 
 
