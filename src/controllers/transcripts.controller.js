@@ -68,15 +68,16 @@ function buildPrompt(type, context, question) {
   const base = `Context:\n${context}\n\nQuestion: ${question}`;
 
   const systemPrompts = {
-    summary: `You are a financial analyst. Summarize the key themes from this earnings transcript clearly and concisely. Structure your response with these sections: **Key Highlights**, **Financial Performance**, **Forward Guidance**, **Management Tone**. For new questions use the transcript context. For follow-up questions use the conversation history.`,
+    summary: `You are a financial analyst. Summarize the key themes from this earnings transcript clearly and concisely. Structure your response with these sections: **Key Highlights**, **Financial Performance**, **Forward Guidance**, **Management Tone**.
+    Strictly refer to the context attached. Don't make things up! `,
 
-    metrics: `You are a financial data analyst. Extract and present the specific financial metrics and numbers from the transcript. Present each figure clearly with any available context (e.g. YoY change, vs guidance). Do not interpret — just extract the facts accurately. For new questions use the transcript context. For follow-up questions use the conversation history.`,
+    metrics: `You are a financial data analyst. Extract and present the specific financial metrics and numbers from the transcript. Present each figure clearly with any available context (e.g. YoY change, vs guidance). Do not interpret — just extract the facts accurately. Strictly refer to the context attached. Don't make things up! `,
 
-    investment: `You are a senior equity analyst. Analyze this earnings transcript with an investor's lens. Identify: **Bullish Developments**, **Risks & Concerns**, **Guidance Trends**, **Overall Investment Implication**. Back every point with specific evidence. For new questions use the transcript context. For follow-up questions use the conversation history.`,
+    investment: `You are a senior equity analyst. Analyze this earnings transcript with an investor's lens. Identify: **Bullish Developments**, **Risks & Concerns**, **Guidance Trends**, **Overall Investment Implication**. Back every point with specific evidence. Strictly refer to the context attached. Don't make things up!  `,
 
-    strategy: `You are a business strategist. Based on the management commentary in this transcript, explain the company's strategic direction, key initiatives, and competitive positioning. Quote specific management language where relevant. For new questions use the transcript context. For follow-up questions use the conversation history.`,
+    strategy: `You are a business strategist. Based on the management commentary in this transcript, explain the company's strategic direction, key initiatives, and competitive positioning. Quote specific management language where relevant. Strictly refer to the context attached. Don't make things up! `,
 
-    default: `You are a financial analyst assistant. Answer the question concisely and directly. Use bullet points where appropriate. For new questions use the transcript context. For follow-up questions use the conversation history.`
+    default: `You are a financial analyst assistant. Answer the question concisely and directly. Use bullet points where appropriate. Strictly refer to the context attached. Don't make things up! .`
   };
 
   return `${systemPrompts[type]}\n\n${base}`;
@@ -102,10 +103,39 @@ async function askQuestion(req, res) {
     const { question } = req.body;
     const result=await pool.query('insert into qna (trans_id,user_id,question)values($1,$2,$3) returning ques_id',[trans_id,id,question]);
     const {ques_id}=result.rows[0];
-    const type = classifyQuestion(question);
+    
+    const history = await pool.query(
+      'SELECT question, answer FROM qna WHERE trans_id=$1 AND user_id=$2 AND answer != \'\' ORDER BY ques_id DESC LIMIT 5',
+      [trans_id, id]
+    );
+
+    let queryToEmbed = question;
+
+    if (history.rows.length > 0) {
+      const rewriteResponse = await groq.chat.completions.create({
+        model: 'openai/gpt-oss-20b',
+        messages: [{
+          role: 'user',
+          content: `Given this conversation history and a follow-up question, rewrite the question as a complete standalone question that can be understood without the history. If the question is already standalone, return it as-is.
+
+    Conversation history:
+    ${history.rows.map(r => `Q: ${r.question}\nA: ${r.answer}`).join('\n\n')}
+
+    Question: "${question}"
+
+    Return only the rewritten question, nothing else.`
+        }]
+      });
+      queryToEmbed = rewriteResponse.choices[0].message.content.trim();
+    }
+
+
+
+
+    const type = classifyQuestion(queryToEmbed);
     const limit = type === 'summary' ? 10 : 5;
 
-    const questionVector = await embedText(question);
+    const questionVector = await embedText(queryToEmbed);
 
     const chunks = await pool.query(
       `SELECT chunk_text FROM chunks
@@ -116,22 +146,16 @@ async function askQuestion(req, res) {
     );
 
     const context = chunks.rows.map(r => r.chunk_text).join('\n\n');
-    const prompt = buildPrompt(type, context, question);
+    const prompt = buildPrompt(type, context, queryToEmbed);
 
-    const history = await pool.query(
-      'SELECT question, answer FROM qna WHERE trans_id=$1 AND user_id=$2 AND answer != \'\' ORDER BY ques_id DESC LIMIT 5',
-      [trans_id, id]
-    );
+    
 
-    const historyMessages = [];
-    for (const row of history.rows.reverse()) {
-      historyMessages.push({ role: 'user', content: row.question });
-      historyMessages.push({ role: 'assistant', content: row.answer });
-    }
+    
 
     const completion = await groq.chat.completions.create({
       model: 'openai/gpt-oss-20b',
-      messages: [...historyMessages, { role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }]
+ 
     });
 
     const answer = completion.choices[0].message.content;
