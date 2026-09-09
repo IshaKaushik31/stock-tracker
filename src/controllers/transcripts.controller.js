@@ -154,11 +154,19 @@ async function askQuestion(req, res) {
 
     
 
-    const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
-      messages: [{ role: 'user', content: prompt }]
- 
-    });
+    const historyMessages = history.rows.slice().reverse().flatMap(r => [
+  { role: 'user', content: r.question },
+  { role: 'assistant', content: r.answer }
+]);
+
+const completion = await groq.chat.completions.create({
+  model: 'openai/gpt-oss-20b',
+  messages: [
+    ...historyMessages,
+    { role: 'user', content: prompt }
+  ]
+});
+
 
     const answer = completion.choices[0].message.content;
     
