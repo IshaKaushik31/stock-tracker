@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
+function formatVolume(v) {
+  if (v == null) return '—';
+  if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toString();
+}
+
+function formatMarketCap(v, sym) {
+  if (v == null) return '—';
+  const c = currencySymbol(sym);
+  if (v >= 1e12) return c + (v / 1e12).toFixed(2) + 'T';
+  if (v >= 1e9) return c + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return c + (v / 1e6).toFixed(2) + 'M';
+  return c + v.toFixed(0);
+}
+
 export default function Watchlist() {
   const [watchlist, setWatchlist] = useState([]);
   const [symbol, setSymbol] = useState('');
@@ -96,23 +113,48 @@ export default function Watchlist() {
                 <tr>
                   <th>Symbol</th>
                   <th className="right">Price</th>
+                  <th className="right">Change</th>
+                  <th className="right">52W High</th>
+                  <th className="right">52W Low</th>
+                  <th className="right">52W Chg</th>
+                  <th className="right">Volume</th>
+                  <th className="right">Market Cap</th>
                   <th className="right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {watchlist.map(w => (
-                  <tr key={w.symbol}>
-                    <td><span className="sym">{w.symbol}</span></td>
-                    <td className="right">
-                      <span className="num-green">
-                        {w.curr_price != null ? `${currencySymbol(w.symbol)}${parseFloat(w.curr_price).toFixed(2)}` : '—'}
-                      </span>
-                    </td>
-                    <td className="right">
-                      <button className="btn-danger" onClick={() => handleDelete(w.symbol)}>Remove</button>
-                    </td>
-                  </tr>
-                ))}
+                {watchlist.map(w => {
+                  const c = currencySymbol(w.symbol);
+                  const chg = w.price_change != null ? parseFloat(w.price_change) : null;
+                  const chgPct = w.price_change_pct != null ? parseFloat(w.price_change_pct) : null;
+                  const pos = chg == null ? null : chg >= 0;
+                  const w52Chg = w.week_52_change != null ? parseFloat(w.week_52_change) * 100 : null;
+                  return (
+                    <tr key={w.symbol}>
+                      <td><span className="sym">{w.symbol}</span></td>
+                      <td className="right">
+                        <span className="num">{w.curr_price != null ? `${c}${parseFloat(w.curr_price).toFixed(2)}` : '—'}</span>
+                      </td>
+                      <td className="right">
+                        <span className={pos == null ? 'num' : pos ? 'num-green' : 'num-red'}>
+                          {chg == null ? '—' : `${pos ? '+' : ''}${c}${chg.toFixed(2)} (${pos ? '+' : ''}${chgPct.toFixed(2)}%)`}
+                        </span>
+                      </td>
+                      <td className="right"><span className="num">{w.week_52_high != null ? `${c}${parseFloat(w.week_52_high).toFixed(2)}` : '—'}</span></td>
+                      <td className="right"><span className="num">{w.week_52_low != null ? `${c}${parseFloat(w.week_52_low).toFixed(2)}` : '—'}</span></td>
+                      <td className="right">
+                        <span className={w52Chg == null ? 'num' : w52Chg >= 0 ? 'num-green' : 'num-red'}>
+                          {w52Chg == null ? '—' : `${w52Chg >= 0 ? '+' : ''}${w52Chg.toFixed(2)}%`}
+                        </span>
+                      </td>
+                      <td className="right"><span className="num">{formatVolume(w.volume)}</span></td>
+                      <td className="right"><span className="num">{formatMarketCap(w.market_cap, w.symbol)}</span></td>
+                      <td className="right">
+                        <button className="btn-danger" onClick={() => handleDelete(w.symbol)}>Remove</button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

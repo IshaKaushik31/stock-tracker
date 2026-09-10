@@ -15,7 +15,7 @@ try{
 async function getHolding(req,res){
 try{
   const {id}=req.user;
-  const holdings=await pool.query('select h.holding_id,h.symbol,h.price_bought,h.quantity,s.curr_price from holdings h join stocks s on h.symbol=s.symbol  where user_id=$1',[id]);
+  const holdings=await pool.query('select h.holding_id,h.symbol,h.price_bought,h.quantity,s.curr_price,s.price_change, s.price_change_pct, s.week_52_high, s.week_52_low, s.week_52_change, s.volume, s.market_cap from holdings h join stocks s on h.symbol=s.symbol  where user_id=$1',[id]);
   res.json({
     holding:holdings.rows
   });

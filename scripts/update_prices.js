@@ -12,8 +12,21 @@ async function run() {
     for (const row of rows) {
       const quote = await yf.quote(row.symbol);
       if (!quote || quote.regularMarketPrice == null) continue;
-      await pool.query('update stocks set curr_price=$1 where symbol=$2', [quote.regularMarketPrice, row.symbol]);
-    }
+      await pool.query(
+      'UPDATE stocks SET curr_price=$1, price_change=$2, price_change_pct=$3, week_52_high=$4, week_52_low=$5, week_52_change=$6, volume=$7, market_cap=$8 WHERE symbol=$9',
+      [
+        quote.regularMarketPrice,
+        quote.regularMarketChange,
+        quote.regularMarketChangePercent,
+        quote.fiftyTwoWeekHigh,
+        quote.fiftyTwoWeekLow,
+        quote.fiftyTwoWeekChangePercent,
+        quote.regularMarketVolume,
+        quote.marketCap,
+        row.symbol
+      ]
+    );
+
 
     const alerts = await pool.query(
       `select a.alert_id, u.email, a.stock_symbol, a.direction, a.price
@@ -31,6 +44,7 @@ async function run() {
     }
 
     console.log('Prices updated successfully');
+  }
   } catch (err) {
     console.error(err.message);
     process.exit(1);

@@ -130,6 +130,7 @@ export default function Holdings() {
                   <th className="right">Qty</th>
                   <th className="right">Buy Price</th>
                   <th className="right">Current</th>
+                  <th className="right">Today</th>
                   <th className="right">P&amp;L</th>
                   <th className="right">Return</th>
                   <th className="right"></th>
@@ -149,6 +150,18 @@ export default function Holdings() {
                         <span className="num-green">
                           {h.curr_price != null ? `${currencySymbol(h.symbol)}${parseFloat(h.curr_price).toFixed(2)}` : '—'}
                         </span>
+                      </td>
+                      <td className="right">
+                        {(() => {
+                          const chg = h.price_change != null ? parseFloat(h.price_change) : null;
+                          const chgPct = h.price_change_pct != null ? parseFloat(h.price_change_pct) : null;
+                          const todayPos = chg == null ? null : chg >= 0;
+                          return (
+                            <span className={todayPos == null ? 'num' : todayPos ? 'num-green' : 'num-red'}>
+                              {chg == null ? '—' : `${todayPos ? '+' : ''}${chgPct.toFixed(2)}%`}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="right">
                         <span className={pos == null ? 'num' : pos ? 'num-green' : 'num-red'}>

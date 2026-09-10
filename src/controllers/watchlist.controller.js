@@ -32,7 +32,7 @@ try{
 async function seeWatchlist(req,res){
 try{
   const {id}=req.user;
-  const stocks=await pool.query('SELECT w.symbol, s.curr_price FROM watchlist as w INNER JOIN stocks as s ON s.symbol=w.symbol WHERE w.user_id=$1',[id]);
+  const stocks=await pool.query('SELECT w.symbol, s.curr_price,s.price_change, s.price_change_pct, s.week_52_high, s.week_52_low, s.week_52_change, s.volume, s.market_cap FROM watchlist as w INNER JOIN stocks as s ON s.symbol=w.symbol WHERE w.user_id=$1',[id]);
   res.json({stocks:stocks.rows})
 }catch(error){
   res.json({message:error.message});
