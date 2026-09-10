@@ -174,4 +174,4 @@ const completion = await groq.chat.completions.create({
 }
 
 
-module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion,getChatHistory,buildPrompt,classifyQuestion};
+module.exports={uploadTranscript,getTranscripts,deleteTranscript,askQuestion,getChatHistory,buildPrompt};
