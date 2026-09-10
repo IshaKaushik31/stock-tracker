@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import * as api from '../api';
 
 export default function Transcripts() {
@@ -210,7 +211,7 @@ export default function Transcripts() {
                 <div key={i} className={`msg-row ${m.type}`}>
                   <span className="msg-label">{m.type === 'user' ? 'You' : 'AI'}</span>
                   <div className={`msg-bubble ${m.type}`}>
-                    {m.type === 'ai' ? <ReactMarkdown>{m.text}</ReactMarkdown> : m.text}
+                    {m.type === 'ai' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown> : m.text}
                   </div>
                 </div>
               ))}
