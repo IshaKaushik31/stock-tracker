@@ -1,5 +1,5 @@
-const YahooFinance = require('yahoo-finance2').default;
-const yf = new YahooFinance();
+const yf = require('../config/yahooFinance');
+
 async function searchSymbol(req,res){
   try{
     const query=req.query.q;

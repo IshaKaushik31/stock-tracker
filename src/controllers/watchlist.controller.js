@@ -1,6 +1,6 @@
 const pool=require('../db/pool');
-const YahooFinance = require('yahoo-finance2').default;
-const yf = new YahooFinance();
+const yf = require('../config/yahooFinance');
+
 
 async function add(req,res){
 try{
