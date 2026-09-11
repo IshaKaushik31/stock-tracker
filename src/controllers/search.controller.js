@@ -8,7 +8,7 @@ async function searchSymbol(req,res){
       .filter(q => q.quoteType === 'EQUITY')
       .map(q => ({ symbol: q.symbol, name: q.shortname || q.longname || q.symbol }));
 
-    res.json({result:quotes});
+    res.json({results:quotes});
   }catch(error){
     res.status(500).json({message:error.message});
   }
