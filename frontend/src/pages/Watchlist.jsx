@@ -99,7 +99,7 @@ export default function Watchlist() {
 
       {error && <div className="error">{error}</div>}
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
+      <div className="card" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
         <div className="card-header">
           <span className="card-title">Add Symbol</span>
         </div>

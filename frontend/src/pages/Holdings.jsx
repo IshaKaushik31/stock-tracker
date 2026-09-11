@@ -116,7 +116,7 @@ export default function Holdings() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ overflow: 'visible' }}>
         <div className="card-header">
           <span className="card-title">Add Position</span>
         </div>
