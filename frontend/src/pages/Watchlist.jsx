@@ -117,13 +117,13 @@ export default function Watchlist() {
               {showSuggestions && suggestions.length > 0 && (
                 <div style={{
                   position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                  background: 'var(--card-bg)', border: '1px solid var(--border)',
+                  background: 'var(--bg-card2)', border: '1px solid var(--border)',
                   borderRadius: 6, marginTop: 2, maxHeight: 200, overflowY: 'auto'
                 }}>
                   {suggestions.map(s => (
                     <div key={s.symbol} onMouseDown={() => handleSuggestionClick(s.symbol)}
                       style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-input)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ fontWeight: 600 }}>{s.symbol}</span>
