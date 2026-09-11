@@ -100,6 +100,12 @@ export async function deleteHolding(id) {
   await axios.delete(`${BASE}/holdings/${id}`, { headers: headers() });
 }
 
+// Search
+export async function searchSymbols(q) {
+  const res = await axios.get(`${BASE}/search?q=${encodeURIComponent(q)}`, { headers: headers() });
+  return res.data;
+}
+
 // Transcripts
 export async function getTranscripts() {
   const res = await axios.get(`${BASE}/transcripts`, { headers: headers() });

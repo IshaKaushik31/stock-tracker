@@ -13,6 +13,7 @@ const watchlistRouter=require('./src/routes/watchlist.js');
 const alertsRouter=require('./src/routes/alerts.js');
 const holdingsRouter=require('./src/routes/holding.js');
 const transcriptsRouter=require('./src/routes/transcripts.js');
+const searchRouter=require('./src/routes/search.js');
 const cookieParser=require('cookie-parser');
 // require('./src/services/cron');
 app.use(cookieParser());
@@ -26,6 +27,7 @@ app.use('/watchlist',watchlistRouter);
 app.use('/alerts',alertsRouter);
 app.use('/holdings',holdingsRouter);
 app.use('/transcripts',transcriptsRouter);
+app.use('/search',searchRouter);
 
 
 app.get('/',(req,res)=>{

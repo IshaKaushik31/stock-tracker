@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
@@ -8,6 +8,9 @@ export default function Holdings() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ symbol: '', quantity: '', buy_price: '' });
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef(null);
 
   useEffect(() => { fetchHoldings(); }, []);
 
@@ -22,9 +25,30 @@ export default function Holdings() {
     }
   }
 
+  function handleSymbolChange(e) {
+    const val = e.target.value;
+    setForm({ ...form, symbol: val });
+    clearTimeout(debounceRef.current);
+    if (val.trim().length < 1) { setSuggestions([]); setShowSuggestions(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await api.searchSymbols(val.trim());
+        setSuggestions(data.results || []);
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+    }, 300);
+  }
+
+  function handleSuggestionClick(sym) {
+    setForm({ ...form, symbol: sym });
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
+
   async function handleAdd(e) {
     e.preventDefault();
     setAdding(true);
+    setShowSuggestions(false);
     setError('');
     try {
       await api.addHolding(form.symbol.toUpperCase(), form.quantity, form.buy_price);
@@ -98,8 +122,30 @@ export default function Holdings() {
         </div>
         <div className="card-body">
           <form className="add-form" onSubmit={handleAdd}>
-            <input type="text" placeholder="Symbol" value={form.symbol}
-              onChange={e => setForm({ ...form, symbol: e.target.value })} required />
+            <div style={{ position: 'relative' }}>
+              <input type="text" placeholder="Search symbol e.g. AAPL, TCS.NS" value={form.symbol}
+                onChange={handleSymbolChange}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                style={{ width: '100%' }} required />
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                  background: 'var(--card-bg)', border: '1px solid var(--border)',
+                  borderRadius: 6, marginTop: 2, maxHeight: 200, overflowY: 'auto'
+                }}>
+                  {suggestions.map(s => (
+                    <div key={s.symbol} onMouseDown={() => handleSuggestionClick(s.symbol)}
+                      style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontWeight: 600 }}>{s.symbol}</span>
+                      <span style={{ color: 'var(--text-dim)', marginLeft: 8 }}>{s.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <input type="number" placeholder="Quantity" value={form.quantity}
               onChange={e => setForm({ ...form, quantity: e.target.value })} required />
             <input type="number" placeholder="Buy Price" step="0.01" value={form.buy_price}

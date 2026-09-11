@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
@@ -22,9 +22,12 @@ function formatMarketCap(v, sym) {
 export default function Watchlist() {
   const [watchlist, setWatchlist] = useState([]);
   const [symbol, setSymbol] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const debounceRef = useRef(null);
 
   useEffect(() => { fetchWatchlist(); }, []);
 
@@ -39,11 +42,32 @@ export default function Watchlist() {
     }
   }
 
+  function handleSymbolChange(e) {
+    const val = e.target.value;
+    setSymbol(val);
+    clearTimeout(debounceRef.current);
+    if (val.trim().length < 1) { setSuggestions([]); setShowSuggestions(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await api.searchSymbols(val.trim());
+        setSuggestions(data.results || []);
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+    }, 300);
+  }
+
+  function handleSuggestionClick(sym) {
+    setSymbol(sym);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
+
   async function handleAdd(e) {
     e.preventDefault();
     if (!symbol.trim()) return;
     setAdding(true);
     setError('');
+    setShowSuggestions(false);
     try {
       await api.addToWatchlist(symbol.toUpperCase());
       setSymbol('');
@@ -81,13 +105,34 @@ export default function Watchlist() {
         </div>
         <div className="card-body">
           <form className="add-form" onSubmit={handleAdd}>
-            <input
-              type="text"
-              placeholder="e.g. AAPL, MSFT, TCS.NS"
-              value={symbol}
-              onChange={e => setSymbol(e.target.value)}
-              style={{ maxWidth: 280 }}
-            />
+            <div style={{ position: 'relative', maxWidth: 280 }}>
+              <input
+                type="text"
+                placeholder="Search symbol e.g. AAPL, TCS.NS"
+                value={symbol}
+                onChange={handleSymbolChange}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                style={{ width: '100%' }}
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                  background: 'var(--card-bg)', border: '1px solid var(--border)',
+                  borderRadius: 6, marginTop: 2, maxHeight: 200, overflowY: 'auto'
+                }}>
+                  {suggestions.map(s => (
+                    <div key={s.symbol} onMouseDown={() => handleSuggestionClick(s.symbol)}
+                      style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontWeight: 600 }}>{s.symbol}</span>
+                      <span style={{ color: 'var(--text-dim)', marginLeft: 8 }}>{s.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button type="submit" disabled={adding} style={{ maxWidth: 120 }}>
               {adding ? 'Adding...' : '+ Add Stock'}
             </button>
