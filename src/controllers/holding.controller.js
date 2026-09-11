@@ -1,10 +1,28 @@
 const pool=require('../db/pool');
+const YahooFinance = require('yahoo-finance2').default;
+const yf = new YahooFinance();
 
 async function addHolding(req,res){
 try{
   const {id}=req.user;
   const {symbol,price_bought,quantity}=req.body;
   await pool.query('insert into stocks(symbol) values($1)on conflict do nothing',[symbol]);
+  const quote=await yf.quote(symbol);
+
+  await pool.query(
+      'UPDATE stocks SET curr_price=$1, price_change=$2, price_change_pct=$3, week_52_high=$4, week_52_low=$5, week_52_change=$6, volume=$7, market_cap=$8 WHERE symbol=$9',
+      [
+        quote.regularMarketPrice,
+        quote.regularMarketChange,
+        quote.regularMarketChangePercent,
+        quote.fiftyTwoWeekHigh,
+        quote.fiftyTwoWeekLow,
+        quote.fiftyTwoWeekChangePercent,
+        quote.regularMarketVolume,
+        quote.marketCap,
+        symbol
+      ]
+    );
   await pool.query('insert into holdings (user_id,symbol,price_bought,quantity) values($1,$2,$3,$4)',[id,symbol,price_bought,quantity]);
   res.json({message:'holding added successfully'});
 } catch(error){
