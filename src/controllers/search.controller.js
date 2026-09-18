@@ -1,4 +1,4 @@
-const yf = require('../config/yahooFinance');
+const { yf } = require('../config/yahooFinance');
 
 async function searchSymbol(req,res){
   try{

@@ -1,4 +1,5 @@
 const pool=require('../db/pool');
+const { fetchQuote } = require('../config/yahooFinance');
 
 
 async function addHolding(req,res){
@@ -6,6 +7,15 @@ try{
   const {id}=req.user;
   const {symbol,price_bought,quantity}=req.body;
   await pool.query('insert into stocks(symbol) values($1)on conflict do nothing',[symbol]);
+
+  try {
+    const quote = await fetchQuote(symbol);
+    await pool.query(
+      'UPDATE stocks SET curr_price=$1, price_change=$2, price_change_pct=$3, week_52_high=$4, week_52_low=$5, week_52_change=$6, volume=$7, market_cap=$8 WHERE symbol=$9',
+      [quote.curr_price, quote.price_change, quote.price_change_pct, quote.week_52_high, quote.week_52_low, quote.week_52_change, quote.volume, quote.market_cap, symbol]
+    );
+  } catch { /* price will be populated by cron */ }
+
   await pool.query('insert into holdings (user_id,symbol,price_bought,quantity) values($1,$2,$3,$4)',[id,symbol,price_bought,quantity]);
   res.json({message:'holding added successfully'});
 } catch(error){
