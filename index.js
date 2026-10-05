@@ -14,6 +14,7 @@ const alertsRouter=require('./src/routes/alerts.js');
 const holdingsRouter=require('./src/routes/holding.js');
 const transcriptsRouter=require('./src/routes/transcripts.js');
 const searchRouter=require('./src/routes/search.js');
+const stocksRouter=require('./src/routes/stocks.js');
 const cookieParser=require('cookie-parser');
 // require('./src/services/cron');
 app.use(cookieParser());
@@ -28,6 +29,7 @@ app.use('/alerts',alertsRouter);
 app.use('/holdings',holdingsRouter);
 app.use('/transcripts',transcriptsRouter);
 app.use('/search',searchRouter);
+app.use('/stocks',stocksRouter);
 
 
 app.get('/',(req,res)=>{
