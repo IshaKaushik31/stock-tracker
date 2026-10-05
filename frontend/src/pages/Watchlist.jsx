@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
@@ -20,6 +21,7 @@ function formatMarketCap(v, sym) {
 }
 
 export default function Watchlist() {
+  const navigate = useNavigate();
   const [watchlist, setWatchlist] = useState([]);
   const [symbol, setSymbol] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -176,7 +178,7 @@ export default function Watchlist() {
                   const w52Chg = w.week_52_change != null ? parseFloat(w.week_52_change) * 100 : null;
                   return (
                     <tr key={w.symbol}>
-                      <td><span className="sym">{w.symbol}</span></td>
+                      <td><span className="sym" style={{ cursor: 'pointer' }} onClick={() => navigate(`/stock/${w.symbol}`)}>{w.symbol}</span></td>
                       <td className="right">
                         <span className="num">{w.curr_price != null ? `${c}${parseFloat(w.curr_price).toFixed(2)}` : '—'}</span>
                       </td>

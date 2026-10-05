@@ -9,6 +9,7 @@ import Holdings from './pages/Holdings';
 import Alerts from './pages/Alerts';
 import Transcripts from './pages/Transcripts';
 import OAuthCallback from './pages/OAuthCallback';
+import StockDetail from './pages/StockDetail';
 
 export const AuthContext = createContext(null);
 
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/holdings" element={token ? <Holdings /> : <Navigate to="/login" />} />
           <Route path="/alerts" element={token ? <Alerts /> : <Navigate to="/login" />} />
           <Route path="/transcripts" element={token ? <Transcripts /> : <Navigate to="/login" />} />
+          <Route path="/stock/:symbol" element={token ? <StockDetail /> : <Navigate to="/login" />} />
           <Route path="/oauth-callback" element={<OAuthCallback />} />
           <Route path="*" element={<Navigate to={token ? '/watchlist' : '/login'} />} />
         </Routes>

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
 export default function Holdings() {
+  const navigate = useNavigate();
   const [holdings, setHoldings] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -189,7 +191,7 @@ export default function Holdings() {
                   const pos = pnl == null ? null : pnl >= 0;
                   return (
                     <tr key={h.holding_id}>
-                      <td><span className="sym">{h.symbol}</span></td>
+                      <td><span className="sym" style={{ cursor: 'pointer' }} onClick={() => navigate(`/stock/${h.symbol}`)}>{h.symbol}</span></td>
                       <td className="right"><span className="num">{h.quantity}</span></td>
                       <td className="right"><span className="num">{currencySymbol(h.symbol)}{parseFloat(h.price_bought).toFixed(2)}</span></td>
                       <td className="right">

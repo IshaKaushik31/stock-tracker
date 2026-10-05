@@ -106,6 +106,12 @@ export async function searchSymbols(q) {
   return res.data;
 }
 
+// Stock detail
+export async function getStockDetail(symbol) {
+  const res = await axios.get(`${BASE}/stocks/${symbol}`, { headers: headers() });
+  return res.data;
+}
+
 // Transcripts
 export async function getTranscripts() {
   const res = await axios.get(`${BASE}/transcripts`, { headers: headers() });
