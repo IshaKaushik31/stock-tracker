@@ -9,7 +9,7 @@ const {fetchQuote}=require('../config/yahooFinance');
 
   if(data.rows.length==0){
     const quote = await fetchQuote(symbol);
-    await pool.query('insert into stocks values($1,$2,$3,$4,$5,$6,$7,$8,$9)',[symbol,quote.curr_price,quote.price_change,quote.price_change_pct,quote.week_52_high,quote.week_52_low,quote.week_52_change,quote.volume,quote.market_cap]);
+    await pool.query('insert into stocks values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[symbol,quote.curr_price,quote.price_change,quote.price_change_pct,quote.week_52_high,quote.week_52_low,quote.week_52_change,quote.volume,quote.market_cap,quote.company_name]);
     return res.json(quote);
   }
 

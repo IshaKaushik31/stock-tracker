@@ -28,10 +28,14 @@ export default function StockDetail() {
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [news, setNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     setError('');
+    setNews([]);
+    setNewsLoading(true);
     Promise.all([
       api.getStockDetail(symbol),
       api.getWatchlist()
@@ -43,6 +47,11 @@ export default function StockDetail() {
       })
       .catch(() => setError('Failed to load stock data'))
       .finally(() => setLoading(false));
+
+    api.getStockNews(symbol)
+      .then(data => setNews(data.news || []))
+      .catch(() => setNews([]))
+      .finally(() => setNewsLoading(false));
   }, [symbol]);
 
   async function handleAddToWatchlist() {
@@ -137,6 +146,41 @@ export default function StockDetail() {
           <div className="stat-label">Market Cap</div>
           <div className="stat-value">{formatMarketCap(stock?.market_cap, symbol)}</div>
         </div>
+      </div>
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Latest News</span>
+        </div>
+        {newsLoading ? (
+          <div className="loading">Loading news...</div>
+        ) : news.length === 0 ? (
+          <div className="empty">
+            <span className="empty-icon">📰</span>
+            No recent news found.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {news.map((article, i) => (
+              <a key={i} href={article.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', gap: '1rem', padding: '1rem 1.5rem', borderBottom: i < news.length - 1 ? '1px solid var(--border)' : 'none', textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {article.image && (
+                  <img src={article.image} alt="" style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} onError={e => e.target.style.display = 'none'} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'var(--text-bright)', fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.4, marginBottom: '0.3rem' }}>
+                    {article.title}
+                  </div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                    {article.source} · {new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

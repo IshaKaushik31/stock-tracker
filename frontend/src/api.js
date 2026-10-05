@@ -112,6 +112,11 @@ export async function getStockDetail(symbol) {
   return res.data;
 }
 
+export async function getStockNews(symbol) {
+  const res = await axios.get(`${BASE}/stocks/${symbol}/news`, { headers: headers() });
+  return res.data;
+}
+
 // Transcripts
 export async function getTranscripts() {
   const res = await axios.get(`${BASE}/transcripts`, { headers: headers() });

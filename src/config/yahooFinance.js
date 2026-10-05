@@ -19,7 +19,8 @@ async function fetchQuote(symbol) {
       week_52_low: data.metrics.low_52w,
       week_52_change: data.metrics.return_1y / 100,
       volume: lp.volume,
-      market_cap: data.market_cap
+      market_cap: data.market_cap,
+      company_name:data.company_name
     };
   } else {
     const res = await fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${process.env.TWELVE_DATA_API_KEY}`);
@@ -33,7 +34,8 @@ async function fetchQuote(symbol) {
       week_52_low: parseFloat(fw.low),
       week_52_change: parseFloat(fw.high_change_percent) / 100,
       volume: parseInt(data.volume),
-      market_cap: null
+      market_cap: null,
+      company_name:data.name
     };
   }
 }
