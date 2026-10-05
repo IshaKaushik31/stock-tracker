@@ -32,9 +32,15 @@ export default function StockDetail() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    setAdded(false);
-    api.getStockDetail(symbol)
-      .then(data => setStock(data))
+    Promise.all([
+      api.getStockDetail(symbol),
+      api.getWatchlist()
+    ])
+      .then(([stockData, watchlistData]) => {
+        setStock(stockData);
+        const isTracked = (watchlistData.stocks || []).some(w => w.symbol === symbol);
+        setAdded(isTracked);
+      })
       .catch(() => setError('Failed to load stock data'))
       .finally(() => setLoading(false));
   }, [symbol]);
