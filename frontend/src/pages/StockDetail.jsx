@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createChart, AreaSeries } from 'lightweight-charts';
 import * as api from '../api';
@@ -37,9 +37,50 @@ export default function StockDetail() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
+
+  const historyRef = useRef([]);
+
+  const chartContainerRef = useCallback((node) => {
+    if (node && !chartRef.current) {
+      const chart = createChart(node, {
+        autoSize: true,
+        height: 280,
+        layout: {
+          background: { color: 'transparent' },
+          textColor: '#9ca3af',
+        },
+        grid: {
+          vertLines: { color: 'rgba(255,255,255,0.05)' },
+          horzLines: { color: 'rgba(255,255,255,0.05)' },
+        },
+        crosshair: { mode: 1 },
+        rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
+        timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: false },
+        handleScroll: false,
+        handleScale: false,
+      });
+      const series = chart.addSeries(AreaSeries, {
+        lineColor: '#22c55e',
+        topColor: 'rgba(34,197,94,0.25)',
+        bottomColor: 'rgba(34,197,94,0)',
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      chartRef.current = chart;
+      seriesRef.current = series;
+      // if history already loaded before chart mounted, push it now
+      if (historyRef.current.length > 0) {
+        series.setData(historyRef.current.map(d => ({ time: d.date, value: parseFloat(d.close) })));
+        chart.timeScale().fitContent();
+      }
+    } else if (!node && chartRef.current) {
+      chartRef.current.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -70,53 +111,14 @@ export default function StockDetail() {
       .finally(() => setHistoryLoading(false));
   }, [symbol, range]);
 
-  // Init chart once the loading screen is gone and container is in DOM
+  // Feed data into chart whenever history loads
   useEffect(() => {
-    if (loading || !chartContainerRef.current || chartRef.current) return;
-
-    const chart = createChart(chartContainerRef.current, {
-      autoSize: true,
-      height: 280,
-      layout: {
-        background: { color: 'transparent' },
-        textColor: '#9ca3af',
-      },
-      grid: {
-        vertLines: { color: 'rgba(255,255,255,0.05)' },
-        horzLines: { color: 'rgba(255,255,255,0.05)' },
-      },
-      crosshair: { mode: 1 },
-      rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
-      timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: false },
-      handleScroll: false,
-      handleScale: false,
-    });
-
-    const series = chart.addSeries(AreaSeries, {
-      lineColor: '#22c55e',
-      topColor: 'rgba(34,197,94,0.25)',
-      bottomColor: 'rgba(34,197,94,0)',
-      lineWidth: 2,
-      priceLineVisible: false,
-    });
-
-    chartRef.current = chart;
-    seriesRef.current = series;
-
-    return () => {
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
-    };
-  }, [loading]);
-
-  // Feed data whenever history changes OR chart is newly created
-  useEffect(() => {
+    historyRef.current = history;
     if (!seriesRef.current || history.length === 0) return;
     const chartData = history.map(d => ({ time: d.date, value: parseFloat(d.close) }));
     seriesRef.current.setData(chartData);
     chartRef.current.timeScale().fitContent();
-  }, [history, loading]);
+  }, [history]);
 
   async function handleAddToWatchlist() {
     setAdding(true);
@@ -130,9 +132,7 @@ export default function StockDetail() {
     }
   }
 
-  if (loading) return <div className="loading">Loading...</div>;
-
-  if (error && !stock) return (
+  if (error && !stock && !loading) return (
     <div className="page">
       <button className="btn-ghost" onClick={() => navigate(-1)} style={{ marginBottom: '1rem', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>← Back</button>
       <div className="error">{error}</div>
@@ -159,6 +159,8 @@ export default function StockDetail() {
   return (
     <div className="page">
       <button className="btn-ghost" onClick={() => navigate(-1)} style={{ marginBottom: '1.25rem', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>← Back</button>
+      {loading && <div className="loading" style={{ marginBottom: '1rem' }}>Loading...</div>}
+      {!loading && error && <div className="error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -193,8 +195,6 @@ export default function StockDetail() {
         </div>
       </div>
 
-      {error && <div className="error" style={{ marginBottom: '1rem' }}>{error}</div>}
-
       {/* Chart */}
       <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem 1.5rem' }}>
         {/* Range toggle */}
@@ -220,7 +220,7 @@ export default function StockDetail() {
           ))}
         </div>
 
-        <div ref={chartContainerRef} style={{ width: '100%', opacity: historyLoading ? 0.4 : 1, transition: 'opacity 0.2s' }} />
+        <div ref={chartContainerRef} style={{ width: '100%', height: 280, overflow: 'hidden', opacity: historyLoading ? 0.4 : 1, transition: 'opacity 0.2s' }} />
       </div>
 
       {/* Stats grid */}
