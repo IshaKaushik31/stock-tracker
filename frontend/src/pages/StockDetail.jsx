@@ -70,9 +70,9 @@ export default function StockDetail() {
       .finally(() => setHistoryLoading(false));
   }, [symbol, range]);
 
-  // Init chart once
+  // Init chart once the loading screen is gone and container is in DOM
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (loading || !chartContainerRef.current || chartRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       autoSize: true,
@@ -105,16 +105,18 @@ export default function StockDetail() {
 
     return () => {
       chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
     };
-  }, []);
+  }, [loading]);
 
-  // Feed data whenever history changes
+  // Feed data whenever history changes OR chart is newly created
   useEffect(() => {
     if (!seriesRef.current || history.length === 0) return;
     const chartData = history.map(d => ({ time: d.date, value: parseFloat(d.close) }));
     seriesRef.current.setData(chartData);
     chartRef.current.timeScale().fitContent();
-  }, [history]);
+  }, [history, loading]);
 
   async function handleAddToWatchlist() {
     setAdding(true);
