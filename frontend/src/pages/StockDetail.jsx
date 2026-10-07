@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createChart } from 'lightweight-charts';
+import { createChart, AreaSeries } from 'lightweight-charts';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
@@ -75,7 +75,7 @@ export default function StockDetail() {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
+      autoSize: true,
       height: 280,
       layout: {
         background: { color: 'transparent' },
@@ -92,7 +92,7 @@ export default function StockDetail() {
       handleScale: false,
     });
 
-    const series = chart.addAreaSeries({
+    const series = chart.addSeries(AreaSeries, {
       lineColor: '#22c55e',
       topColor: 'rgba(34,197,94,0.25)',
       bottomColor: 'rgba(34,197,94,0)',
@@ -103,15 +103,7 @@ export default function StockDetail() {
     chartRef.current = chart;
     seriesRef.current = series;
 
-    const ro = new ResizeObserver(() => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-      }
-    });
-    ro.observe(chartContainerRef.current);
-
     return () => {
-      ro.disconnect();
       chart.remove();
     };
   }, []);
