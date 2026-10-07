@@ -15,4 +15,6 @@ async function searchSymbol(req,res){
   
 
 }
+
+
 module.exports={searchSymbol};

@@ -21,4 +21,53 @@ const {fetchQuote}=require('../config/yahooFinance');
 
 }
 
-module.exports={getStockDetail}
+async function getPriceHistory(req, res) {
+  try {
+    const { symbol } = req.params;
+    const range = req.query.range || '1M';
+
+    const sliceMap = { '1W': 7, '1M': 30, '3M': 90, '1Y': 365 };
+    const sliceSize = sliceMap[range] || 30;
+
+    const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = new Date().toISOString().slice(0, 10);
+
+    if (symbol.endsWith('.NS')) {
+      const bare = symbol.replace('.NS', '');
+      const apiRes = await fetch(
+        `https://bharatstockapi.com/v1/stocks/${bare}/prices?from=${from}&to=${to}&page_size=365&exchange=NSE`,
+        { headers: { 'X-API-Key': process.env.BHARAT_STOCK_API_KEY } }
+      );
+      const data = await apiRes.json();
+      const history = (data.data || []).map(d => ({
+        date: d.trade_date,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+        volume: d.volume
+      })).reverse().slice(-sliceSize);
+      return res.json({ history });
+
+    } else {
+      const apiRes = await fetch(
+        `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1day&outputsize=365&apikey=${process.env.TWELVE_DATA_API_KEY}`
+      );
+      const data = await apiRes.json();
+      const history = (data.values || []).map(d => ({
+        date: d.datetime,
+        open: parseFloat(d.open),
+        high: parseFloat(d.high),
+        low: parseFloat(d.low),
+        close: parseFloat(d.close),
+        volume: parseInt(d.volume)
+      })).reverse().slice(-sliceSize);
+      return res.json({ history });
+    }
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports = { getStockDetail, getPriceHistory }

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createChart } from 'lightweight-charts';
 import * as api from '../api';
 import { currencySymbol } from '../api';
 
@@ -20,6 +21,8 @@ function formatMarketCap(v, sym) {
   return c + v.toFixed(0);
 }
 
+const RANGES = ['1W', '1M', '3M', '1Y'];
+
 export default function StockDetail() {
   const { symbol } = useParams();
   const navigate = useNavigate();
@@ -30,16 +33,21 @@ export default function StockDetail() {
   const [added, setAdded] = useState(false);
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [range, setRange] = useState('1M');
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const seriesRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
     setError('');
     setNews([]);
     setNewsLoading(true);
-    Promise.all([
-      api.getStockDetail(symbol),
-      api.getWatchlist()
-    ])
+
+    Promise.all([api.getStockDetail(symbol), api.getWatchlist()])
       .then(([stockData, watchlistData]) => {
         setStock(stockData);
         const isTracked = (watchlistData.stocks || []).some(w => w.symbol === symbol);
@@ -53,6 +61,68 @@ export default function StockDetail() {
       .catch(() => setNews([]))
       .finally(() => setNewsLoading(false));
   }, [symbol]);
+
+  useEffect(() => {
+    setHistoryLoading(true);
+    api.getStockHistory(symbol, range)
+      .then(data => setHistory(data.history || []))
+      .catch(() => setHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [symbol, range]);
+
+  // Init chart once
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 280,
+      layout: {
+        background: { color: 'transparent' },
+        textColor: '#9ca3af',
+      },
+      grid: {
+        vertLines: { color: 'rgba(255,255,255,0.05)' },
+        horzLines: { color: 'rgba(255,255,255,0.05)' },
+      },
+      crosshair: { mode: 1 },
+      rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
+      timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: false },
+      handleScroll: false,
+      handleScale: false,
+    });
+
+    const series = chart.addAreaSeries({
+      lineColor: '#22c55e',
+      topColor: 'rgba(34,197,94,0.25)',
+      bottomColor: 'rgba(34,197,94,0)',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+
+    chartRef.current = chart;
+    seriesRef.current = series;
+
+    const ro = new ResizeObserver(() => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      }
+    });
+    ro.observe(chartContainerRef.current);
+
+    return () => {
+      ro.disconnect();
+      chart.remove();
+    };
+  }, []);
+
+  // Feed data whenever history changes
+  useEffect(() => {
+    if (!seriesRef.current || history.length === 0) return;
+    const chartData = history.map(d => ({ time: d.date, value: parseFloat(d.close) }));
+    seriesRef.current.setData(chartData);
+    chartRef.current.timeScale().fitContent();
+  }, [history]);
 
   async function handleAddToWatchlist() {
     setAdding(true);
@@ -80,73 +150,96 @@ export default function StockDetail() {
   const chgPct = stock?.price_change_pct != null ? parseFloat(stock.price_change_pct) : null;
   const pos = chg == null ? null : chg >= 0;
   const w52Chg = stock?.week_52_change != null ? parseFloat(stock.week_52_change) * 100 : null;
+  const exchange = symbol.endsWith('.NS') ? 'NSE · INR' : 'NASDAQ · USD';
+
+  const stats = [
+    { label: 'Price', value: stock?.curr_price != null ? `${c}${parseFloat(stock.curr_price).toFixed(2)}` : '—' },
+    { label: "Today's Change", value: chg == null ? '—' : `${pos ? '+' : ''}${c}${chg.toFixed(2)} (${pos ? '+' : ''}${chgPct.toFixed(2)}%)`, color: pos == null ? '' : pos ? 'var(--neon-green)' : '#ef4444' },
+    { label: '52W High', value: stock?.week_52_high != null ? `${c}${parseFloat(stock.week_52_high).toFixed(2)}` : '—' },
+    { label: '52W Low', value: stock?.week_52_low != null ? `${c}${parseFloat(stock.week_52_low).toFixed(2)}` : '—' },
+    { label: '52W Change', value: w52Chg == null ? '—' : `${w52Chg >= 0 ? '+' : ''}${w52Chg.toFixed(2)}%`, color: w52Chg == null ? '' : w52Chg >= 0 ? 'var(--neon-green)' : '#ef4444' },
+    { label: 'Volume', value: formatVolume(stock?.volume) },
+    { label: 'Market Cap', value: formatMarketCap(stock?.market_cap, symbol) },
+  ];
 
   return (
     <div className="page">
-      <button className="btn-ghost" onClick={() => navigate(-1)} style={{ marginBottom: '1rem', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>← Back</button>
+      <button className="btn-ghost" onClick={() => navigate(-1)} style={{ marginBottom: '1.25rem', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}>← Back</button>
 
-      <div className="page-header">
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="page-title">
-            <span style={{ color: 'var(--neon-cyan)' }}>{symbol}</span>
-            {stock?.name && (
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)', fontWeight: 400, marginLeft: '0.75rem' }}>
-                {stock.name}
-              </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-bright)', margin: 0 }}>{symbol}</h1>
+            {stock?.company_name && (
+              <span style={{ fontSize: '1rem', color: 'var(--text-dim)', fontWeight: 400 }}>{stock.company_name}</span>
             )}
-          </h1>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>{exchange}</div>
         </div>
-        {added ? (
-          <span className="badge badge-green">✓ Added to Watchlist</span>
-        ) : (
-          <button onClick={handleAddToWatchlist} disabled={adding}>
-            {adding ? 'Adding...' : '+ Add to Watchlist'}
-          </button>
-        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-bright)', lineHeight: 1 }}>
+              {stock?.curr_price != null ? `${c}${parseFloat(stock.curr_price).toFixed(2)}` : '—'}
+            </div>
+            {chg != null && (
+              <div style={{ fontSize: '0.9rem', color: pos ? 'var(--neon-green)' : '#ef4444', marginTop: '0.2rem' }}>
+                {pos ? '+' : ''}{c}{chg.toFixed(2)} ({pos ? '+' : ''}{chgPct.toFixed(2)}%)
+              </div>
+            )}
+          </div>
+          {added ? (
+            <span className="badge badge-green">✓ In Watchlist</span>
+          ) : (
+            <button onClick={handleAddToWatchlist} disabled={adding}>
+              {adding ? 'Adding...' : '+ Watchlist'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      <div className="stats-bar">
-        <div className="stat-card">
-          <div className="stat-label">Price</div>
-          <div className="stat-value">
-            {stock?.curr_price != null ? `${c}${parseFloat(stock.curr_price).toFixed(2)}` : '—'}
-          </div>
+      {/* Chart */}
+      <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem 1.5rem' }}>
+        {/* Range toggle */}
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem' }}>
+          {RANGES.map(r => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              style={{
+                padding: '0.3rem 0.75rem',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                background: range === r ? 'var(--neon-cyan)' : 'var(--bg-input)',
+                color: range === r ? '#0a0f1a' : 'var(--text-dim)',
+                transition: 'all 0.15s',
+              }}
+            >
+              {r}
+            </button>
+          ))}
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Today's Change</div>
-          <div className={`stat-value ${pos == null ? '' : pos ? 'green' : 'red'}`}>
-            {chg == null ? '—' : `${pos ? '+' : ''}${c}${chg.toFixed(2)} (${pos ? '+' : ''}${chgPct.toFixed(2)}%)`}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">52W High</div>
-          <div className="stat-value">
-            {stock?.week_52_high != null ? `${c}${parseFloat(stock.week_52_high).toFixed(2)}` : '—'}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">52W Low</div>
-          <div className="stat-value">
-            {stock?.week_52_low != null ? `${c}${parseFloat(stock.week_52_low).toFixed(2)}` : '—'}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">52W Change</div>
-          <div className={`stat-value ${w52Chg == null ? '' : w52Chg >= 0 ? 'green' : 'red'}`}>
-            {w52Chg == null ? '—' : `${w52Chg >= 0 ? '+' : ''}${w52Chg.toFixed(2)}%`}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Volume</div>
-          <div className="stat-value">{formatVolume(stock?.volume)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Market Cap</div>
-          <div className="stat-value">{formatMarketCap(stock?.market_cap, symbol)}</div>
-        </div>
+
+        <div ref={chartContainerRef} style={{ width: '100%', opacity: historyLoading ? 0.4 : 1, transition: 'opacity 0.2s' }} />
       </div>
+
+      {/* Stats grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {stats.map(s => (
+          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '0.9rem 1rem' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{s.label}</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: s.color || 'var(--text-bright)' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* News */}
       <div className="card">
         <div className="card-header">
           <span className="card-title">Latest News</span>
@@ -159,23 +252,35 @@ export default function StockDetail() {
             No recent news found.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0', padding: '0' }}>
             {news.map((article, i) => (
-              <a key={i} href={article.url} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', gap: '1rem', padding: '1rem 1.5rem', borderBottom: i < news.length - 1 ? '1px solid var(--border)' : 'none', textDecoration: 'none' }}
+              <a
+                key={i}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  padding: '1rem 1.5rem',
+                  borderBottom: '1px solid var(--border)',
+                  borderRight: i % 2 === 0 ? '1px solid var(--border)' : 'none',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card2)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                {article.image && (
-                  <img src={article.image} alt="" style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} onError={e => e.target.style.display = 'none'} />
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</div>
+                <div style={{ color: 'var(--text-bright)', fontSize: '0.9rem', fontWeight: 600, lineHeight: 1.4 }}>{article.title}</div>
+                {article.description && (
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.8rem', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {article.description}
+                  </div>
                 )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--text-bright)', fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.4, marginBottom: '0.3rem' }}>
-                    {article.title}
-                  </div>
-                  <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                    {article.source} · {new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
+                <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginTop: 'auto' }}>
+                  {new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </a>
             ))}
