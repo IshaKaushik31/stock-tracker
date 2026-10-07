@@ -114,10 +114,16 @@ export default function StockDetail() {
   // Feed data into chart whenever history loads
   useEffect(() => {
     historyRef.current = history;
+    console.log('[Chart] history effect:', { len: history.length, seriesReady: !!seriesRef.current, sample: history[0] });
     if (!seriesRef.current || history.length === 0) return;
-    const chartData = history.map(d => ({ time: d.date, value: parseFloat(d.close) }));
-    seriesRef.current.setData(chartData);
-    chartRef.current.timeScale().fitContent();
+    try {
+      const chartData = history.map(d => ({ time: d.date, value: parseFloat(d.close) }));
+      console.log('[Chart] setData sample:', chartData[0], chartData[chartData.length - 1]);
+      seriesRef.current.setData(chartData);
+      chartRef.current.timeScale().fitContent();
+    } catch (e) {
+      console.error('[Chart] setData error:', e);
+    }
   }, [history]);
 
   async function handleAddToWatchlist() {
